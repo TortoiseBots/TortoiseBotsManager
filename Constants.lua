@@ -381,7 +381,7 @@ TB.C.ACTION_DEFINITIONS = {
         label = "Repair",
         section = "rest",
         icon = "Interface\\Icons\\Trade_BlackSmithing",
-        tip = "Bots repair their gear at a nearby vendor.",
+        tip = "Bots repair their gear at a nearby repair npc, including a field repair bot.",
     },
     {
         id = "sell",

@@ -93,7 +93,7 @@ The **Gear & bags** button opens the [bot panel](bot-panel.md) of your targeted 
 | :--- | :--- | :--- | :--- |
 | Rest | Eat and drink until full. | `.bot action rest` | [rest](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-action-rest) |
 | Ready Check | Starts the game's ready check and asks bots if they are ready (health, mana, debuffs). | `.bot action ready` | [ready](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-action-ready) |
-| Repair | Repair at a nearby vendor. | `.bot action repair` | [repair](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-action-repair) |
+| Repair | Repair at a nearby repair npc (field repair bots too). | `.bot action repair` | [repair](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-action-repair) |
 | Sell junk | Sell grey items. | `.bot action sell` | [sell](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-action-sell) |
 | Train | Learn what the targeted class trainer offers. | `.bot action learn` | [learn](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-action-learn) |
 | Downtime | Own alt runs trainer, vendor and repair errands, then comes back. Needs the `downtime` capability; hires and pool bots are refused. | `.bot downtime` | [downtime](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/party-actions.md#bot-downtime) |
