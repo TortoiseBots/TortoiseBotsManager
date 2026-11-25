@@ -1,3 +1,5 @@
+<img width="2752" height="1536" alt="Gemini_Generated_Image_l11iyxl11iyxl11i" src="https://github.com/user-attachments/assets/b476935c-4892-42fb-832b-d6ba4d207cbc" />
+
 # TortoiseBots Manager
 
 [![Latest release](https://img.shields.io/github/v/release/Sagiroth/TortoiseBotsManager?label=release&logo=github)](https://github.com/Sagiroth/TortoiseBotsManager/releases/latest)
