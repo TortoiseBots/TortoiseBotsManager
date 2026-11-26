@@ -6104,6 +6104,10 @@ end)();
     TB.OnSystemMessage("TBM:CAPS|armory,inventory")
     TB.ShowTab("armory")
     assert(TB.armoryFrame:IsVisible() and TB.tabArmory:IsVisible(), "Armory tab opens with the capability")
+    local _, rowRel = TB.armoryFrame.rows[1]:GetPoint()
+    local _, _, _, _, scrollY = TB.armoryFrame.scroll:GetPoint()
+    assert(rowRel == TB.armoryFrame.scroll and scrollY == -62,
+        "Armory rows hang below the column heads, not over the search row")
     -- Drain the tab's refresh request (empty snapshot) before the panel test.
     TB.OnSystemMessage("TBM:ARMORY_BEGIN|0")
     TB.OnSystemMessage("TBM:ARMORY_END|0")
@@ -6138,7 +6142,14 @@ end)();
     assert(TB.botPanel.missingText:IsVisible()
         and TB.botPanel.missingText.text == "Missing: Head enchant, Belt enchant",
         "Gear tab Missing line names the slots")
+    local _, _, _, _, durabilityY = TB.botPanel.durabilityText:GetPoint()
+    local _, _, _, _, upgradesY = TB.botPanel.upgradesText:GetPoint()
+    local _, _, _, _, missingY = TB.botPanel.missingText:GetPoint()
+    assert(durabilityY > upgradesY and upgradesY > missingY,
+        "durability, upgrades and Missing stack without overlap")
     assert(TB.botPanel.statsButton:IsVisible(), "Stats button shows with the capability")
+    assert(TB.botPanel.statsButton:GetFrameLevel() > TB.botPanel.statsSheet:GetFrameLevel(),
+        "Stats button draws above the sheet")
     TB.ToggleGearStats()
     assert(TB.botPanel.statsSheet:IsVisible() and not TB.botPanel.model:IsVisible(),
         "Stats swaps the model for the sheet")

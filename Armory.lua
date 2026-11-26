@@ -399,11 +399,11 @@ local function createSquare(row, slot)
     return button
 end
 
-local function createArmoryRow(parent, index)
+local function createArmoryRow(parent, scroll, index)
     local row = CreateFrame("Frame", nil, parent)
     row:SetWidth(STRIP_TEXT_W)
     row:SetHeight(ROW_H - 2)
-    row:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -(index - 1) * ROW_H)
+    row:SetPoint("TOPLEFT", scroll, "TOPLEFT", 0, -(index - 1) * ROW_H)
     TB.ApplySurface(row, "row")
     row:EnableMouse(true)
 
@@ -712,7 +712,7 @@ function TB.CreateArmoryFrame(parent)
     end)
     frame.scroll = scroll
     frame.rows = {}
-    for i = 1, ROW_N do table.insert(frame.rows, createArmoryRow(frame, i)) end
+    for i = 1, ROW_N do table.insert(frame.rows, createArmoryRow(frame, scroll, i)) end
 
     local count = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     count:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 4, 5)

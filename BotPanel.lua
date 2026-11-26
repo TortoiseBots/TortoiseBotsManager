@@ -1525,13 +1525,18 @@ local function createPanel()
     panel.model = model
     -- Below the model (a model frame draws over its parent's text).
     local durability = gear:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    durability:SetPoint("TOP", panel, "TOP", 0, -342)
+    durability:SetPoint("TOP", panel, "TOP", 0, -338)
     durability:SetWidth(PW - 110)
     panel.durabilityText = durability
 
+    local upgrades = gear:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    upgrades:SetPoint("TOP", panel, "TOP", 0, -352)
+    upgrades:SetWidth(PW - 110)
+    panel.upgradesText = upgrades
+
     local missing = gear:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    missing:SetPoint("TOP", panel, "TOP", 0, -357)
-    missing:SetWidth(PW - 60)
+    missing:SetPoint("TOP", panel, "TOP", 0, -366)
+    missing:SetWidth(PW - 40)
     panel.missingText = missing
 
     -- Gear readiness (server capability `armory`): a dot on every slot with
@@ -1561,6 +1566,9 @@ local function createPanel()
         table.insert(sheet.lines, { label = label, value = value })
     end
     panel.statsSheet = sheet
+    if statsButton.SetFrameLevel and sheet.GetFrameLevel then
+        statsButton:SetFrameLevel(sheet:GetFrameLevel() + 3)
+    end
     panel.gearButtons = {}
     local function placeColumn(list, x)
         for i, def in ipairs(list) do
@@ -2197,10 +2205,12 @@ local function renderGear(inv)
         local hex = pct < 25 and "|cffff4030" or (pct < 60 and "|cffffd200" or "|cff9d9d9d")
         text = hex .. "Lowest durability " .. pct .. "%|r"
     end
+    local upgradeText = ""
     if upgrades > 0 then
-        text = text .. (text ~= "" and "\n" or "") .. "|cff40ff40" .. upgrades .. " upgrade(s) in bags|r"
+        upgradeText = "|cff40ff40" .. upgrades .. " upgrade(s) in bags|r"
     end
     panel.durabilityText:SetText(text)
+    if panel.upgradesText then panel.upgradesText:SetText(upgradeText) end
     if not hasArmory then gearStats = false end
     if panel.statsButton then
         if hasArmory then
