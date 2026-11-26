@@ -6053,6 +6053,13 @@ end)();
     assert(TB.ArmoryMissingText(goldie) ==
         "Missing: Head enchant, Neck empty, Shoulder enchant, Belt enchant, Ring empty",
         "Missing line joins the reasons in slot order")
+    assert(TB.ArmoryMissingSummary(goldie) == "Missing: 3 enchants, 2 empty slots",
+        "Gear tab summary counts enchants and empty slots")
+    local withQuality = TB.ParseArmoryEquipment("0:12640:0:1:4,1:0:0:2:0")
+    assert(withQuality[0].quality == 4 and withQuality[1].quality == 0 and withQuality[0].miss == 1,
+        "equipment entries carry the optional item quality")
+    assert(TB.ParseArmoryEquipment("0:12640:0:1")[0].quality == nil, "quality stays optional")
+    assert(TB.ArmorySpecText({ classId = 3 }) == "Hunter", "offline rows without a spec show the class")
     assert(TB.ArmoryProblemCount(mistral) == 0 and not TB.ArmoryHasProblems(mistral),
         "offline rows are not problems")
     assert(TB.ArmoryHasProblems(goldie), "under-cap and missing gear is a problem")

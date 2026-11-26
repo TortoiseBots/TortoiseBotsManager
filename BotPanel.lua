@@ -2166,7 +2166,7 @@ local function renderMissing(row)
             fs:SetText("Nothing missing")
             TB.SetTextColor(fs, color("green"))
         else
-            fs:SetText(TB.ArmoryMissingText(row))
+            fs:SetText(TB.ArmoryMissingSummary(row))
             TB.SetTextColor(fs, color("red"))
         end
     end

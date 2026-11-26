@@ -158,12 +158,13 @@ function TB.ParseArmoryEquipment(text)
     local slots = {}
     if not text or text == "-" or text == "" then return slots end
     for entry in string.gfind(text, "[^,]+") do
-        local _, _, slot, itemId, enchantId, miss = string.find(entry, "^(%d+):(%d+):(%d+):(%d+)$")
+        local _, _, slot, itemId, enchantId, miss, quality = string.find(entry, "^(%d+):(%d+):(%d+):(%d+):?(%d*)$")
         if slot then
             slots[tonumber(slot)] = {
                 itemId = tonumber(itemId),
                 enchantId = tonumber(enchantId),
                 miss = tonumber(miss),
+                quality = tonumber(quality),
             }
         end
     end
@@ -230,6 +231,23 @@ function TB.ArmoryMissingText(row)
     return "Missing: " .. table.concat(words, ", ")
 end
 
+-- Short form for tight spots: "Missing: 8 enchants, 1 empty slot".
+function TB.ArmoryMissingSummary(row)
+    local missing = TB.ArmoryMissing(row)
+    local count = table.getn(missing)
+    if count == 0 then return "Nothing missing" end
+    if count <= 2 then return TB.ArmoryMissingText(row) end
+    local empty = 0
+    for _, entry in ipairs(missing) do
+        if entry.miss == 2 then empty = empty + 1 end
+    end
+    local enchants = count - empty
+    local parts = {}
+    if enchants > 0 then table.insert(parts, enchants .. (enchants == 1 and " enchant" or " enchants")) end
+    if empty > 0 then table.insert(parts, empty .. (empty == 1 and " empty slot" or " empty slots")) end
+    return "Missing: " .. table.concat(parts, ", ")
+end
+
 function TB.ArmoryProblemCount(row)
     return table.getn(TB.ArmoryMissing(row))
 end
@@ -253,11 +271,18 @@ local SPEC_SHORT = {
     Retribution = "Ret",
     Enhancement = "Enh",
     Elemental = "Ele",
+    Survival = "Surv",
+    ["Beast Mastery"] = "BM",
+    Destruction = "Destro",
+    Demonology = "Demo",
+    Assassination = "Assa",
+    Subtlety = "Sub",
 }
 
 function TB.ArmorySpecText(row)
     if not row then return "" end
-    local spec = row.spec and (SPEC_SHORT[row.spec] or row.spec) or "?"
+    local spec = row.spec and (SPEC_SHORT[row.spec] or row.spec)
+        or (C.CLASS_NAMES and C.CLASS_NAMES[row.classId]) or "?"
     local role = row.role and TB.ArmoryRoleLabel(row.role) or ""
     if role == "" then return spec end
     return spec .. " " .. role
@@ -456,13 +481,23 @@ local function createArmoryRow(parent, scroll, index)
     row:SetScript("OnEnter", function()
         local data = this.armoryData
         if not data then return end
-        GameTooltip:SetOwner(this, "ANCHOR_RIGHT")
+        -- Beside the window, so the tooltip never covers the list.
+        GameTooltip:SetOwner(this, "ANCHOR_NONE")
+        GameTooltip:SetPoint("TOPLEFT", this, "TOPRIGHT", 34, 0)
         GameTooltip:SetText(data.name)
         local role = data.role and TB.ArmoryRoleLabel(data.role) or "Unknown role"
         if data.spec then role = data.spec .. " · " .. role end
         GameTooltip:AddLine(role .. " · level " .. tostring(data.level or 0), COL.muted[1], COL.muted[2], COL.muted[3])
         if data.online then
-            GameTooltip:AddLine(TB.ArmoryMissingText(data), COL.muted[1], COL.muted[2], COL.muted[3])
+            local missing = TB.ArmoryMissing(data)
+            if table.getn(missing) == 0 then
+                GameTooltip:AddLine("Nothing missing", color("green")[1], color("green")[2], color("green")[3])
+            else
+                GameTooltip:AddLine("Missing:", color("red")[1], color("red")[2], color("red")[3])
+                for _, entry in ipairs(missing) do
+                    GameTooltip:AddLine("  " .. entry.reason, 1, 1, 1)
+                end
+            end
         else
             GameTooltip:AddLine("Offline", COL.muted[1], COL.muted[2], COL.muted[3])
         end
@@ -537,7 +572,7 @@ local function paintRow(row, data)
         local entry = data.eq and data.eq[slot]
         local shown = data.online and TB.ArmorySlotShown(data, slot)
         if shown then
-            local quality = itemQuality(entry.itemId)
+            local quality = itemQuality(entry.itemId) or entry.quality
             local r, g, b = qualityRGB(quality)
             if entry.itemId > 0 then
                 button:SetBackdropColor(0.035, 0.038, 0.045, 1)
