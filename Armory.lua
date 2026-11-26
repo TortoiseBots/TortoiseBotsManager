@@ -368,7 +368,7 @@ local function squareTooltip(button)
             GameTooltip:SetText(TB.ArmorySlotLabel(button.slot))
         end
         if (entry.miss or 0) > 0 then
-            GameTooltip:AddLine(button.missReason or "Missing enchant", color("red")[1], color("red")[2], color("red")[3])
+            GameTooltip:AddLine("Missing: " .. (button.missReason or "enchant"), color("red")[1], color("red")[2], color("red")[3])
         else
             GameTooltip:AddLine(TB.ArmorySlotLabel(button.slot), COL.muted[1], COL.muted[2], COL.muted[3])
         end

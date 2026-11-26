@@ -432,6 +432,57 @@ Minimap.width, Minimap.height = 140, 140
 Minimap:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -20, -20)
 GameTooltip = CreateFrame("GameTooltip", "GameTooltip", UIParent, "GameTooltipTemplate")
 ItemRefTooltip = GameTooltip
+
+-- GameTooltip is drawn as a plain frame so a hover scene can show it.
+-- Mock.itemLines[id] holds the extra item lines a hover scene wants.
+Mock.itemLines = {}
+local QUALITY = { [0] = { 0.62, 0.62, 0.62 }, { 1, 1, 1 }, { 0.12, 1, 0 }, { 0, 0.44, 0.87 }, { 0.64, 0.21, 0.93 }, { 1, 0.5, 0 } }
+function GameTooltip:SetOwner(owner) self.owner = owner; self.lines = {} end
+function GameTooltip:ClearLines() self.lines = {} end
+function GameTooltip:SetText(t, r, g, b) self.lines = { { t, r or 1, g or 1, b or 1 } } end
+function GameTooltip:AddLine(t, r, g, b) table.insert(self.lines, { t, r or 1, g or 0.82, b or 0 }) end
+function GameTooltip:AddDoubleLine(l, rt, r, g, b) table.insert(self.lines, { l .. "   " .. (rt or ""), r or 1, g or 1, b or 1 }) end
+function GameTooltip:SetHyperlink(link)
+    local _, _, id, enchant = string.find(link, "item:(%d+):?(%d*)")
+    id = tonumber(id)
+    local name, _, q = GetItemInfo(id)
+    local c = QUALITY[q or 1] or QUALITY[1]
+    self.lines = { { name, c[1], c[2], c[3] } }
+    for _, l in ipairs(Mock.itemLines[id] or {}) do table.insert(self.lines, { l[1], l[2] or 1, l[3] or 1, l[4] or 1 }) end
+end
+function GameTooltip:IsOwned(o) return self.owner == o end
+function GameTooltip:Show()
+    self.shown = true
+    if not self.owner then return end
+    local f = Mock.tooltipFrame
+    if not f then
+        f = CreateFrame("Frame", nil, UIParent)
+        f:SetFrameStrata("TOOLTIP")
+        f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } })
+        f:SetBackdropColor(0.03, 0.03, 0.05, 1)
+        f:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+        f.fs = {}
+        Mock.tooltipFrame = f
+    end
+    local widest = 0
+    for i, l in ipairs(self.lines) do
+        local fs = f.fs[i] or f:CreateFontString(nil, "OVERLAY", i == 1 and "GameFontHighlight" or "GameFontHighlightSmall")
+        f.fs[i] = fs
+        fs:ClearAllPoints()
+        fs:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -10 - (i - 1) * 16)
+        fs:SetText(l[1])
+        fs:SetTextColor(l[2], l[3], l[4])
+        fs:Show()
+        widest = math.max(widest, string.len(l[1]) * (i == 1 and 6.5 or 5.4))
+    end
+    for i = table.getn(self.lines) + 1, table.getn(f.fs) do f.fs[i]:Hide() end
+    f:SetWidth(widest + 20)
+    f:SetHeight(table.getn(self.lines) * 16 + 16)
+    f:ClearAllPoints()
+    f:SetPoint("BOTTOMLEFT", self.owner, "TOPRIGHT", 4, 4)
+    f:Show()
+end
+function GameTooltip:Hide() self.shown = false; if Mock.tooltipFrame then Mock.tooltipFrame:Hide() end end
 DropDownList1 = CreateFrame("Frame", "DropDownList1", UIParent)
 DropDownList1.shown = false
 UISpecialFrames = {}

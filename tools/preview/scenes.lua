@@ -280,6 +280,21 @@ scene("armory", function()
     TB.RefreshArmoryView()
     dump("armory", { main }, "Armory tab: hit and defense vs cap, equipped strip")
 end)
+scene("armory-hover", function()
+    tab("armory", nil)
+    TB.SetArmorySelection("Ironhide")
+    TB.RefreshArmoryView()
+    Mock.itemLines[12640] = {
+        { "Binds when picked up" }, { "Head                              Plate" }, { "565 Armor" },
+        { "+18 Strength" }, { "+19 Stamina" }, { "Durability 100 / 100" },
+        { "Requires Level 60" }, { "Equip: Improves your chance to get a critical strike by 2%.", 0.12, 1, 0 },
+        { "Equip: Improves your chance to hit by 2%.", 0.12, 1, 0 },
+    }
+    local row = TB.armoryFrame.rows[1]
+    local square = row and row.squares[0]
+    if square then this = square; square:GetScript("OnEnter")() end
+    dump("armory-hover", { main, Mock.tooltipFrame }, "Armory tab: hovering a slot shows the item")
+end)
 scene("log", function() tab("log", nil); dump("log", { main }, "Log tab") end)
 scene("loot", function()
     local today = os.date("%Y-%m-%d")
