@@ -22,6 +22,7 @@ sources:
 | **Camp** | Rest, ready check, repair, sell junk, train, downtime errands for own alts, release/corpse run, rebuff, formations, quests, and grinding. |
 | **Party** | Group roster and roles; opens each bot's gear and bags. |
 | **Guild** | Claimed raid alts in your guild; farm, buy, and craft orders with live progress. |
+| **Armory** | Gear readiness next to Guild (needs the `armory` capability): hit and defense vs cap, an equipped strip with red dots for missing slots or enchants, a problems summary, and a **Problems only** filter. |
 | **Roster** | Account characters: log in/out, invite, kick, summon, fill party or raid. |
 | **Raid** | Shown in raids: raid tactics and loaded boss tactics. |
 | **Dungeon** | Shown when enabled by the server: bot-led or player-led dungeon runs. |
@@ -30,7 +31,7 @@ sources:
 
 # Panels and Targeting
 
-- **Bot panel:** Paper doll, bags with upgrade markers, equip/trade/use/mail/bank items, per-bot switches, shaman totems, paladin auras, hunter aspects, warlock curses, spells, NPC errands, and flights. Open from a Party row, `Gear & bags`, the target-frame button, or `/tbm bags <name>`.[^features-doc]
+- **Bot panel:** Paper doll with readiness dots and a **Missing:** line, a **Stats** sheet over the model (hit/defense vs cap, main stats, resists), bags with upgrade markers, equip/trade/use/mail/bank items, per-bot switches, shaman totems, paladin auras, hunter aspects, warlock curses, spells, NPC errands, and flights. Open from a Party row, `Gear & bags`, the target-frame button, or `/tbm bags <name>`.[^features-doc]
 - **Bots overview:** One row per party bot with fight switches (via **Bots** on the Party tab).
 - **Mini mode:** `Mini` (or `/tbm mini`) switches to a compact bar of fight buttons and favourites.[^controls-doc]
 - **Quiet targeting:** Button clicks travel over addon messages without chat spam. Targeting one of your bots scopes orders to that bot; otherwise orders apply to the whole party.

@@ -41,7 +41,7 @@ nodes:
   - id: play-party-roster
     path: play/party-roster-guild.md
     category: play
-    summary: Party roles, Roster lifecycle, claimed Guild bots and the Raid tab.
+    summary: Party roles, Roster lifecycle, claimed Guild bots, the Armory readiness overview and the Raid tab.
   - id: play-bot-panel
     path: play/bot-panel.md
     category: play

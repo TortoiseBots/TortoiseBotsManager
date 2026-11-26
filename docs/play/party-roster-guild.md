@@ -1,9 +1,9 @@
 ---
 id: play-party-roster
-title: Party, Roster, Guild and Raid Tabs
+title: Party, Roster, Guild, Armory and Raid Tabs
 category: play
-summary: Party roles and blessings, Roster lifecycle, claimed Guild bots and the Raid tab.
-tags: [party, roster, guild, raid, roles, blessings, lifecycle]
+summary: Party roles and blessings, Roster lifecycle, claimed Guild bots, the Armory readiness overview and the Raid tab.
+tags: [party, roster, guild, armory, raid, roles, blessings, lifecycle]
 relates_to:
   - play-getting-started
   - play-bot-panel
@@ -115,6 +115,14 @@ With a mailbox open, the window also shows a **Send missing items** button: it f
 - **Bar:** tick rows, then **Invite** (to your party; a full party becomes a raid) or **Summon**. **Fill raid** invites online claimed bots until the raid has 40. **Sync** refreshes the list. **Orders** opens the active-orders window (below). **Guild order** opens the guild-wide order search.
 
 Module: [autonomous guilds](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/world/social.md#autonomous-guild-formation).
+
+## Armory tab
+
+A readiness overview for your bots, next to Guild. Needs the `armory` capability; without it the tab is hidden. Opening or **Refresh** asks `.bot armory` for the claimed guild bots plus the party and raid bots you control.
+
+Each row shows the bot in its class colour, its spec and role, hit against the role's cap (green, red when short, `—` for healers), defense against the cap for tanks, and a strip of equipped slots. A red dot marks an empty slot or a missing enchant; hover a square for the item and the reason. The count at the end of the strip is the number of problems, or a green tick. Offline bots are greyed out and show `offline`. Click a row to open that bot's [panel](bot-panel.md).
+
+The summary line counts tanks, healers and DPS, then the bots under the hit cap, tanks under the defense cap, and bots with missing gear or enchants. **Show: Guild bots | This raid** filters the list; **Problems only** keeps bots with something to fix. Search narrows by name and **Clear** resets it.
 
 ## Raid tab
 

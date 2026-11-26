@@ -12,6 +12,7 @@ Core.lua
 Roster.lua
 Comms.lua
 UI.lua
+Armory.lua
 BotPanel.lua
 BotTarget.lua
 BotTotem.lua

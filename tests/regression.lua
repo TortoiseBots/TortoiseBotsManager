@@ -241,6 +241,7 @@ for _, file in ipairs({
     "Roster.lua",
     "Comms.lua",
     "UI.lua",
+    "Armory.lua",
     "BotPanel.lua",
     "BotTotem.lua",
     "BotTarget.lua",
@@ -6007,6 +6008,174 @@ end)();
     UnitClass = savedUnitClass
     partyMembers = savedParty
     TB.CloseBotPanel()
+end)();
+
+-- ── Armory tab, parser and Gear tab extras ──────────────────────────────────
+(function()
+    local ARMORY_ROW = "Goldie|1|60|1|1|tank|Protection|72|6.0|5.0|2.0|441|112+15+10+10+10|9|440|"
+        .. "ap=1284,crit=18.2,armor=9870,sta=620,sp=0,heal=0,scrit=0,mp5=0,int=40"
+    local OFFLINE_ROW = "Mistral|7|52|0|0|healer|Restoration|0|0|0|0|0|0+0+0+0+0|0|0|-"
+    local GOLDIE_EQ = "0:12640:0:1,1:0:0:2,2:0:0:1,14:0:0:0,4:0:0:0,8:0:0:0,9:0:0:0,"
+        .. "5:0:0:1,6:0:0:0,7:0:0:0,10:0:0:2,11:0:0:0,12:0:0:0,13:0:0:0,"
+        .. "15:0:0:0,16:0:0:0,17:0:0:0"
+
+    TB.OnSystemMessage("TBM:CAPS|armory,inventory")
+    assert(TB.HasArmoryCapability(), "armory capability must be readable")
+    TB.OnSystemMessage("TBM:ARMORY_BEGIN|2")
+    TB.OnSystemMessage("TBM:ARMORY|" .. ARMORY_ROW)
+    TB.OnSystemMessage("TBM:ARMORY|" .. OFFLINE_ROW)
+    TB.OnSystemMessage("TBM:ARMORY_EQ|Goldie|" .. GOLDIE_EQ)
+    TB.OnSystemMessage("TBM:ARMORY_END|2")
+    local goldie = TB.GetArmoryRow("Goldie")
+    local mistral = TB.GetArmoryRow("Mistral")
+    assert(goldie and mistral, "armory snapshot must keep both rows")
+    assert(goldie.classId == 1 and goldie.level == 60 and goldie.online and goldie.inGroup,
+        "armory row identity fields")
+    assert(goldie.role == "tank" and goldie.spec == "Protection", "armory role and spec")
+    assert(goldie.hitCap == 9 and goldie.defCap == 440 and goldie.avgIlvl == 72, "armory caps and ilvl")
+    assert(goldie.resists[1] == 112 and goldie.resists[5] == 10, "armory resists parse in order")
+    assert(goldie.stats.ap == 1284 and goldie.stats.crit == 18.2 and goldie.hasStats,
+        "armory stats parse key=value pairs")
+    assert(table.getn(goldie.eq) == 17 and goldie.eq[0].itemId == 12640 and goldie.eq[0].miss == 1,
+        "armory equipment lines map by slot")
+    assert(not mistral.online and not mistral.hasStats and table.getn(mistral.eq) == 0,
+        "offline armory row carries no equipment or stats")
+
+    local hit, cap = TB.ArmoryHit(goldie)
+    assert(hit == 6 and cap == 9 and TB.ArmoryHitPass(goldie) == false, "tank reads melee hit")
+    assert(TB.ArmoryDefensePass(goldie) == true, "tank defense compares to its cap")
+    assert(TB.ArmoryHitPass(mistral) == nil, "healers have no hit goal")
+    local missing = TB.ArmoryMissing(goldie)
+    assert(table.getn(missing) == 5, "five slots are missing something")
+    assert(missing[1].reason == "Head enchant" and missing[2].reason == "Neck empty"
+        and missing[4].reason == "Belt enchant" and missing[5].reason == "Ring empty",
+        "miss reasons use slot labels and the belt wording")
+    assert(TB.ArmoryMissingText(goldie) ==
+        "Missing: Head enchant, Neck empty, Shoulder enchant, Belt enchant, Ring empty",
+        "Missing line joins the reasons in slot order")
+    assert(TB.ArmoryMissingSummary(goldie) == "Missing: 3 enchants, 2 empty slots",
+        "Gear tab summary counts enchants and empty slots")
+    local withQuality = TB.ParseArmoryEquipment("0:12640:0:1:4,1:0:0:2:0")
+    assert(withQuality[0].quality == 4 and withQuality[1].quality == 0 and withQuality[0].miss == 1,
+        "equipment entries carry the optional item quality")
+    assert(TB.ParseArmoryEquipment("0:12640:0:1")[0].quality == nil, "quality stays optional")
+    assert(TB.ArmorySpecText({ classId = 3 }) == "Hunter", "offline rows without a spec show the class")
+    assert(TB.ArmoryProblemCount(mistral) == 0 and not TB.ArmoryHasProblems(mistral),
+        "offline rows are not problems")
+    assert(TB.ArmoryHasProblems(goldie), "under-cap and missing gear is a problem")
+
+    local raid = TB.FilterArmoryRows(TB.GetArmoryRows(), { raidOnly = true })
+    assert(table.getn(raid) == 1 and raid[1].name == "Goldie", "This raid keeps inGroup rows")
+    local searched = TB.FilterArmoryRows(TB.GetArmoryRows(), { search = "gold" })
+    assert(table.getn(searched) == 1 and searched[1].name == "Goldie", "search filters by name")
+    local problems = TB.FilterArmoryRows(TB.GetArmoryRows(), { problemsOnly = true })
+    assert(table.getn(problems) == 1 and problems[1].name == "Goldie", "Problems only hides clean bots")
+    local summary = TB.ArmorySummary(TB.GetArmoryRows())
+    assert(summary.tanks == 1 and summary.healers == 1 and summary.dps == 0
+        and summary.underHit == 1 and summary.underDefense == 0 and summary.missing == 1,
+        "summary counts roles and readiness problems")
+
+    -- One square is omitted when the slot is deliberately unused (two-hander).
+    local twoHander = TB.ParseArmoryRow({
+        "Tanky", "1", "60", "1", "0", "tank", "Protection", "60",
+        "6.0", "5.0", "2.0", "400", "0+0+0+0+0", "9", "440", "-",
+    })
+    twoHander.eq = TB.ParseArmoryEquipment("15:12640:0:0,16:0:0:0")
+    assert(TB.ArmorySlotShown(twoHander, 15) and not TB.ArmorySlotShown(twoHander, 16),
+        "an unused off hand is not drawn")
+
+    -- A partial one-bot answer merges; a full answer replaces the list.
+    TB.OnSystemMessage("TBM:TRANSPORT|party")
+    now = now + 5
+    assert(TB.RequestArmory("Goldie"), "one-bot armory request is sent")
+    assert(lastAddon() == "armory Goldie", "one-bot armory request names the bot")
+    TB.OnSystemMessage("TBM:ARMORY_BEGIN|1")
+    TB.OnSystemMessage("TBM:ARMORY|" .. ARMORY_ROW)
+    TB.OnSystemMessage("TBM:ARMORY_EQ|Goldie|" .. GOLDIE_EQ)
+    TB.OnSystemMessage("TBM:ARMORY_END|1")
+    assert(TB.GetArmoryRow("Mistral") ~= nil, "one-bot answer merges into the snapshot")
+    TB.OnSystemMessage("TBM:ARMORY_BEGIN|1")
+    TB.OnSystemMessage("TBM:ARMORY|" .. OFFLINE_ROW)
+    TB.OnSystemMessage("TBM:ARMORY_END|1")
+    assert(TB.GetArmoryRow("Goldie") == nil and TB.GetArmoryRow("Mistral") ~= nil,
+        "full answer replaces the snapshot")
+
+    -- A count mismatch never commits.
+    TB.OnSystemMessage("TBM:ARMORY_BEGIN|1")
+    TB.OnSystemMessage("TBM:ARMORY|" .. ARMORY_ROW)
+    TB.OnSystemMessage("TBM:ARMORY|" .. OFFLINE_ROW)
+    TB.OnSystemMessage("TBM:ARMORY_END|1")
+    assert(TB.GetArmoryRow("Goldie") == nil, "mismatched armory count is discarded")
+
+    -- Tab gate: shown only with the capability; losing it leaves the tab.
+    TB.OnSystemMessage("TBM:CAPS|armory,inventory")
+    TB.ShowTab("armory")
+    assert(TB.armoryFrame:IsVisible() and TB.tabArmory:IsVisible(), "Armory tab opens with the capability")
+    local _, rowRel = TB.armoryFrame.rows[1]:GetPoint()
+    local _, _, _, _, scrollY = TB.armoryFrame.scroll:GetPoint()
+    assert(rowRel == TB.armoryFrame.scroll and scrollY == -78,
+        "Armory rows hang below the column heads, not over the search row")
+    -- Drain the tab's refresh request (empty snapshot) before the panel test.
+    TB.OnSystemMessage("TBM:ARMORY_BEGIN|0")
+    TB.OnSystemMessage("TBM:ARMORY_END|0")
+    TB.OnSystemMessage("TBM:CAPS|inventory")
+    assert(not TB.HasArmoryCapability(), "armory capability can disappear")
+    assert(TB.actionsFrame:IsVisible() and not TB.armoryFrame:IsVisible(),
+        "losing the capability falls back to the Fight tab")
+    assert(table.getn(TB.GetArmoryRows()) == 0, "losing the capability clears the snapshot")
+
+    -- Gear tab: dots, Missing line, Stats sheet, on a live panel.
+    local savedParty = partyMembers
+    partyMembers = { "Alpha" }
+    itemCache[12640] = { name = "Lionheart Helm", quality = 4, texture = "Interface\\Icons\\INV_Helmet_36" }
+    itemCache[2586] = { name = "Gamemaster's Robe", quality = 4, texture = "Interface\\Icons\\INV_Chest_Cloth_05" }
+    TB.OnSystemMessage("TBM:CAPS|armory,inventory")
+    TB.OnSystemMessage("TBM:TRANSPORT|party")
+    now = now + 5
+    TB.OpenBotPanel("Alpha", "gear")
+    TB.OnSystemMessage("TBM:INV_BEGIN|Alpha|0")
+    TB.OnSystemMessage("TBM:INV_EQ|0|12640|90|100")
+    TB.OnSystemMessage("TBM:INV_EQ|5|2586|40|50")
+    TB.OnSystemMessage("TBM:INV_END|Alpha|30|46")
+    TB.OnSystemMessage("TBM:ARMORY_BEGIN|1")
+    TB.OnSystemMessage("TBM:ARMORY|Alpha|1|60|1|1|tank|Protection|70|6.0|5.0|2.0|441|"
+        .. "10+0+0+0+0|9|440|ap=1200,crit=15.5,armor=9000,sta=600,sp=0,heal=0,scrit=0,mp5=0,int=30")
+    TB.OnSystemMessage("TBM:ARMORY_EQ|Alpha|0:12640:0:1,5:2586:0:1")
+    TB.OnSystemMessage("TBM:ARMORY_END|1")
+    assert(TB.botPanel:IsVisible(), "bot panel is open")
+    assert(TB.botPanel.gearButtons[0].missDot:IsVisible(), "missing head enchant shows a dot")
+    assert(TB.botPanel.gearButtons[5].missDot:IsVisible(), "missing belt enchant shows a dot")
+    assert(TB.botPanel.gearButtons[0].missReason == "No enchant", "slot tooltip explains the dot")
+    assert(TB.botPanel.missingText:IsVisible()
+        and TB.botPanel.missingText.text == "Missing: Head enchant, Belt enchant",
+        "Gear tab Missing line names the slots")
+    local _, _, _, _, durabilityY = TB.botPanel.durabilityText:GetPoint()
+    local _, _, _, _, upgradesY = TB.botPanel.upgradesText:GetPoint()
+    local _, _, _, _, missingY = TB.botPanel.missingText:GetPoint()
+    assert(durabilityY > upgradesY and upgradesY > missingY,
+        "durability, upgrades and Missing stack without overlap")
+    assert(TB.botPanel.statsButton:IsVisible(), "Stats button shows with the capability")
+    assert(TB.botPanel.statsButton:GetFrameLevel() > TB.botPanel.statsSheet:GetFrameLevel(),
+        "Stats button draws above the sheet")
+    TB.ToggleGearStats()
+    assert(TB.botPanel.statsSheet:IsVisible() and not TB.botPanel.model:IsVisible(),
+        "Stats swaps the model for the sheet")
+    assert(TB.botPanel.statsButton.text == "Model", "Stats button flips to Model")
+    local joined = ""
+    for _, line in ipairs(TB.botPanel.statsSheet.lines) do
+        joined = joined .. (line.label.text or "") .. " " .. (line.value.text or "") .. "\n"
+    end
+    assert(string.find(joined, "GOALS · TANK", 1, true), "sheet starts with the role goal")
+    assert(string.find(joined, "6.0% / 9%", 1, true), "sheet shows hit against the cap")
+    assert(string.find(joined, "441 / 440", 1, true), "sheet shows defense against the cap")
+    assert(string.find(joined, "Attack power 1200", 1, true), "melee block reads the stats")
+    assert(string.find(joined, "Fire 10", 1, true), "sheet lists the five resists")
+    TB.ToggleGearStats()
+    assert(not TB.botPanel.statsSheet:IsVisible() and TB.botPanel.statsButton.text == "Stats",
+        "Model flips back")
+    TB.CloseBotPanel()
+    partyMembers = savedParty
+    itemCache[12640] = nil
 end)()
 
 dofile(root .. "/tests/phase0_tests.lua")()

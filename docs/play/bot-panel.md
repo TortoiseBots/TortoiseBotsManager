@@ -25,11 +25,17 @@ Everything shown comes from the server; each click sends one request and the ser
 
 | Tab | What it shows | Sends |
 | :--- | :--- | :--- |
-| Gear | Paper doll with the bot's 3D model, durability and money. Click a slot to unequip. | `.bot inv <bot>`, `.bot item <bot> unequip <bag> <slot>` |
+| Gear | Paper doll with the bot's 3D model, durability and money. Click a slot to unequip. With the `armory` capability: a red dot on every slot that is empty or missing an enchant, a red **Missing:** line, and a **Stats** button over the model (below). | `.bot inv <bot>`, `.bot armory <bot>`, `.bot item <bot> unequip <bag> <slot>` |
 | Bags | Every bag item; a green **+** marks an upgrade for this bot. Click an item for the item menu. **Equip upgrades** equips everything better from new loot. | `.bot inv <bot>`, `.bot command <bot> d equip upgrades` |
 | Behaviour | Per-bot switches stored on the server (below). | `.bot behavior <bot> <key> on\|off` |
 | Spells | What the bot can cast (**Ask for spellbook**). Click a spell and the bot casts it. | `.bot command <bot> spells`, `.bot command <bot> cast <spell>` |
 | Professions | Trade skills with skill bars, known recipes coloured for this bot's skill, and a collapsed **Not learned yet** group per skill. A search box filters both lists. Needs the `professions` capability. | `.bot professions <bot>` |
+
+### Gear tab readiness
+
+With the `armory` capability the Gear tab also answers `.bot armory <bot>` when it opens and on **Refresh**. A red dot on a slot means the slot is empty or holds an item without its permanent enchant; hover it for the item and the reason. Under the durability line, **Missing:** names the slots in plain words (`Missing: Head enchant, Belt enchant, Ring empty`); when nothing is missing the line is green.
+
+**Stats** swaps the 3D model for a small sheet: hit against the cap for the role (no goal for healers), defense against the cap for tanks, then attack power, crit, armor and stamina for melee roles or spell power/healing, spell crit, mana regen and intellect for casters and healers, and the five resistances. **Model** swaps back. The addon compares only what the server sends and has no caps of its own.
 
 ### Item menu
 
@@ -132,7 +138,7 @@ Hovering a [guild bot's row](party-roster-guild.md#guild-tab) shows its skills (
 | Button | What it does | Sends | Module |
 | :--- | :--- | :--- | :--- |
 | Trade | Opens a trade window; put items or gold in and accept, the bot accepts on its own. | `.bot item <bot> trade` | [trade](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/bot-panel.md#bot-item-trade) |
-| Refresh | Reload gear, bags, behaviour, totems, conjured goods and professions. | `.bot inv <bot>`, `.bot totem <bot> status`, `.bot professions <bot>` | [inv](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/bot-panel.md#bot-inv) |
+| Refresh | Reload gear, readiness, bags, behaviour, totems, conjured goods and professions. | `.bot inv <bot>`, `.bot armory <bot>`, `.bot totem <bot> status`, `.bot professions <bot>` | [inv](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/bot-panel.md#bot-inv) |
 | Upkeep | Restock food, drink, reagents, ammo and repairs. Bot must be online. | `.bot maintenance <bot>` | [maintenance](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/roster-and-hiring.md#bot-maintenance) |
 | AutoGear | Equip the best gear the bot already has in its bags. | `.bot autogear <bot>` | [autogear](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/roster-and-hiring.md#bot-autogear) |
 | NPC | NPC errands (below). | | |
