@@ -2,6 +2,23 @@
 
 All notable changes to TortoiseBotsManager are documented here.
 
+## v2.5.0 (2026-11-26)
+
+### Armory & Gear Readiness
+- New Armory tab (next to Guild) appears only when the server supports it; lists guild bots or the current raid. [#101](https://github.com/Sagiroth/TortoiseBotsManager/pull/101)
+- Hit and defense are now shown against each bot's goal, so you can see readiness at a glance. [#101](https://github.com/Sagiroth/TortoiseBotsManager/pull/101)
+- Equipped-slot strip flags empty slots and missing enchants with a red dot; hover a slot to see the item and what's missing. [#101](https://github.com/Sagiroth/TortoiseBotsManager/pull/101)
+- "Problems only" filter lets you cut straight to bots that need attention. [#101](https://github.com/Sagiroth/TortoiseBotsManager/pull/101)
+
+### UI & Tooltips
+- Repair button tooltip now correctly states bots can repair at a nearby repair NPC or a player-placed field repair bot. [#100](https://github.com/Sagiroth/TortoiseBotsManager/pull/100)
+- No behavior change — the button sends the same command as before; this is clarity only. [#100](https://github.com/Sagiroth/TortoiseBotsManager/pull/100)
+
+### Docs & Project Info
+- README now states the project is an unofficial community project made for educational purposes and not affiliated with anyone. [#96](https://github.com/Sagiroth/TortoiseBotsManager/pull/96)
+
+---
+
 ## v2.4.1 (2026-11-17)
 
 ### UI & Controls
