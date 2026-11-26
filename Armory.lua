@@ -10,9 +10,17 @@ local C = TB.C or {}
 local COL = C.COLOR or {}
 
 local ROW_H = 24
-local ROW_N = 10
-local STRIP_W = 9
+local ROW_N = 9
+local STRIP_W = 13
 local STRIP_GAP = 1
+local STRIP_X = 206
+local ROLE_ICONS = {
+    tank = "Interface\\Icons\\Ability_Defend",
+    healer = "Interface\\Icons\\Spell_Holy_FlashHeal",
+    melee = "Interface\\Icons\\Ability_DualWield",
+    ranged = "Interface\\Icons\\Ability_Marksmanship",
+    caster = "Interface\\Icons\\Spell_Fire_FireBolt02",
+}
 local STRIP_TEXT_W = 452
 
 local CAP = "armory"
@@ -279,6 +287,13 @@ local SPEC_SHORT = {
     Subtlety = "Sub",
 }
 
+-- The spec word alone; the row shows the role as an icon beside it.
+function TB.ArmorySpecShort(row)
+    if not row then return "" end
+    return row.spec and (SPEC_SHORT[row.spec] or row.spec)
+        or (C.CLASS_NAMES and C.CLASS_NAMES[row.classId]) or "?"
+end
+
 function TB.ArmorySpecText(row)
     if not row then return "" end
     local spec = row.spec and (SPEC_SHORT[row.spec] or row.spec)
@@ -381,6 +396,28 @@ local function itemQuality(id)
     return quality
 end
 
+local SLOT_ART = {}
+for _, list in ipairs({ C.GEAR_LEFT or {}, C.GEAR_RIGHT or {}, C.GEAR_BOTTOM or {} }) do
+    for _, def in ipairs(list) do SLOT_ART[def.slot] = "Interface\\PaperDoll\\UI-PaperDoll-Slot-" .. def.empty end
+end
+
+-- An item the client has not seen yet has no icon; asking a hidden tooltip
+-- for it makes the client fetch it, so the next refresh shows the icon.
+local scanTip
+local function itemIcon(id)
+    if not id or id <= 0 or not GetItemInfo then return nil end
+    local name, _, _, _, _, _, _, _, texture = GetItemInfo(id)
+    if name and texture then return texture end
+    if not scanTip then
+        scanTip = CreateFrame("GameTooltip", "TortoiseBotsManagerArmoryScanTip", UIParent, "GameTooltipTemplate")
+    end
+    if scanTip.SetHyperlink then
+        scanTip:SetOwner(UIParent, "ANCHOR_NONE")
+        scanTip:SetHyperlink("item:" .. id .. ":0:0:0")
+    end
+    return nil
+end
+
 -- ── row widgets ────────────────────────────────────────────────────────────
 local function squareTooltip(button)
     local row = button.armoryRow
@@ -408,10 +445,14 @@ local function createSquare(row, slot)
     local button = CreateFrame("Button", nil, row)
     button.slot = slot
     button:SetWidth(STRIP_W)
-    button:SetHeight(14)
+    button:SetHeight(STRIP_W)
     button:SetBackdrop(TB.FLAT_BACKDROP)
     button:SetBackdropColor(0.035, 0.038, 0.045, 1)
     button:SetBackdropBorderColor(0.28, 0.28, 0.30, 1)
+    button.icon = button:CreateTexture(nil, "ARTWORK")
+    button.icon:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+    button.icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
+    button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     button.dot = button:CreateTexture(nil, "OVERLAY")
     button.dot:SetWidth(5); button.dot:SetHeight(5)
     button.dot:SetPoint("TOPRIGHT", button, "TOPRIGHT", 2, 2)
@@ -440,31 +481,32 @@ local function createArmoryRow(parent, scroll, index)
 
     row.name = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     row.name:SetPoint("LEFT", row, "LEFT", 7, 0)
-    row.name:SetWidth(70); row.name:SetJustifyH("LEFT")
+    row.name:SetWidth(60); row.name:SetJustifyH("LEFT")
+
+    row.roleIcon = row:CreateTexture(nil, "ARTWORK")
+    row.roleIcon:SetWidth(13); row.roleIcon:SetHeight(13)
+    row.roleIcon:SetPoint("LEFT", row, "LEFT", 69, 0)
+    row.roleIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
     row.spec = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.spec:SetPoint("LEFT", row, "LEFT", 83, 0)
-    row.spec:SetWidth(68); row.spec:SetJustifyH("LEFT")
+    row.spec:SetPoint("LEFT", row, "LEFT", 86, 0)
+    row.spec:SetWidth(42); row.spec:SetJustifyH("LEFT")
     TB.SetTextColor(row.spec, color("muted"))
 
     row.hit = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.hit:SetPoint("LEFT", row, "LEFT", 157, 0)
-    row.hit:SetWidth(50); row.hit:SetJustifyH("LEFT")
+    row.hit:SetPoint("LEFT", row, "LEFT", 130, 0)
+    row.hit:SetWidth(44); row.hit:SetJustifyH("LEFT")
 
     row.def = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.def:SetPoint("LEFT", row, "LEFT", 213, 0)
-    row.def:SetWidth(30); row.def:SetJustifyH("LEFT")
-
-    row.problems = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.problems:SetPoint("RIGHT", row, "RIGHT", -3, 0)
-    row.problems:SetWidth(24); row.problems:SetJustifyH("RIGHT")
+    row.def:SetPoint("LEFT", row, "LEFT", 176, 0)
+    row.def:SetWidth(28); row.def:SetJustifyH("LEFT")
 
     row.squares = {}
-    local x = 249
+    local x = STRIP_X
     for _, slot in ipairs(SLOT_ORDER) do
         local button = createSquare(row, slot)
-        if slot == 10 or slot == 15 then x = x + 3 end
-        button:SetPoint("TOPLEFT", row, "TOPLEFT", x, -4)
+        if slot == 10 or slot == 15 then x = x + 2 end
+        button:SetPoint("LEFT", row, "LEFT", x, 0)
         x = x + STRIP_W + STRIP_GAP
     end
 
@@ -489,6 +531,15 @@ local function createArmoryRow(parent, scroll, index)
         if data.spec then role = data.spec .. " · " .. role end
         GameTooltip:AddLine(role .. " · level " .. tostring(data.level or 0), COL.muted[1], COL.muted[2], COL.muted[3])
         if data.online then
+            local hit, cap = TB.ArmoryHit(data)
+            if (cap or 0) > 0 then
+                local c = TB.ArmoryHitPass(data) and color("green") or color("red")
+                GameTooltip:AddLine(string.format("Hit %.1f%% of %s%%", hit, tostring(cap)), c[1], c[2], c[3])
+            end
+            if data.role == "tank" and (data.defCap or 0) > 0 then
+                local c = TB.ArmoryDefensePass(data) and color("green") or color("red")
+                GameTooltip:AddLine("Defense " .. tostring(data.defense or 0) .. " of " .. tostring(data.defCap), c[1], c[2], c[3])
+            end
             local missing = TB.ArmoryMissing(data)
             if table.getn(missing) == 0 then
                 GameTooltip:AddLine("Nothing missing", color("green")[1], color("green")[2], color("green")[3])
@@ -523,7 +574,15 @@ local function paintRow(row, data)
     else
         TB.SetTextColor(row.name, classColor)
     end
-    row.spec:SetText(TB.ArmorySpecText(data))
+    row.spec:SetText(TB.ArmorySpecShort(data))
+    local roleIcon = data.role and ROLE_ICONS[data.role]
+    if roleIcon then
+        row.roleIcon:SetTexture(roleIcon)
+        if offline then row.roleIcon:SetVertexColor(0.45, 0.45, 0.45) else row.roleIcon:SetVertexColor(1, 1, 1) end
+        row.roleIcon:Show()
+    else
+        row.roleIcon:Hide()
+    end
     row.accent:SetTexture(classColor[1], classColor[2], classColor[3], 0.95)
     row.selected = TB.armorySelected == data.name
     if row.selected then
@@ -549,7 +608,7 @@ local function paintRow(row, data)
         end
         if data.role == "tank" then
             if (data.defCap or 0) > 0 then
-                defText = tostring(data.defense or 0) .. "/" .. tostring(data.defCap)
+                defText = tostring(data.defense or 0)
                 TB.SetTextColor(row.def, TB.ArmoryDefensePass(data) and color("green") or color("red"))
             else
                 defText = tostring(data.defense or 0)
@@ -575,9 +634,14 @@ local function paintRow(row, data)
             local quality = itemQuality(entry.itemId) or entry.quality
             local r, g, b = qualityRGB(quality)
             if entry.itemId > 0 then
+                local icon = itemIcon(entry.itemId)
+                button.icon:SetTexture(icon or SLOT_ART[slot])
+                if icon then button.icon:SetVertexColor(1, 1, 1) else button.icon:SetVertexColor(0.7, 0.7, 0.7) end
                 button:SetBackdropColor(0.035, 0.038, 0.045, 1)
                 button:SetBackdropBorderColor(r, g, b, quality and 1 or 0.45)
             else
+                button.icon:SetTexture(SLOT_ART[slot])
+                button.icon:SetVertexColor(0.35, 0.35, 0.35)
                 button:SetBackdropColor(0.05, 0.05, 0.055, 0.55)
                 button:SetBackdropBorderColor(0.35, 0.34, 0.32, 1)
             end
@@ -591,14 +655,6 @@ local function paintRow(row, data)
         end
     end
 
-    local problems = TB.ArmoryProblemCount(data)
-    if offline then
-        row.problems:SetText("")
-    elseif problems > 0 then
-        row.problems:SetText(HEX.red .. tostring(problems) .. "|r")
-    else
-        row.problems:SetText(HEX.green .. "✓|r")
-    end
 end
 
 -- ── view ───────────────────────────────────────────────────────────────────
@@ -614,18 +670,23 @@ function TB.RefreshArmoryView()
     })
     local summary = TB.ArmorySummary(scopeRows)
 
-    if frame.summary then
-        local function count(value, word)
-            local hex = value > 0 and HEX.red or HEX.green
-            return hex .. tostring(value) .. " " .. word .. "|r"
+    if frame.roleTiles then
+        frame.roleTiles[1]:SetText(tostring(summary.tanks))
+        frame.roleTiles[2]:SetText(tostring(summary.healers))
+        frame.roleTiles[3]:SetText(tostring(summary.dps))
+        local chips = {
+            { summary.underHit, "under hit cap", "red" },
+            { summary.underDefense, "tank def low", "red" },
+            { summary.missing, "gear issues", "yellow" },
+        }
+        for i, def in ipairs(chips) do
+            local chip = frame.chips[i]
+            local c = def[1] > 0 and color(def[3]) or color("green")
+            chip:SetBackdropColor(c[1], c[2], c[3], 0.14)
+            chip:SetBackdropBorderColor(c[1], c[2], c[3], 0.65)
+            chip.text:SetText(tostring(def[1]) .. " " .. def[2])
+            TB.SetTextColor(chip.text, c)
         end
-        frame.summary:SetText(
-            "Tanks " .. HEX.text .. tostring(summary.tanks) .. "|r"
-            .. " · Healers " .. HEX.text .. tostring(summary.healers) .. "|r"
-            .. " · DPS " .. HEX.text .. tostring(summary.dps) .. "|r"
-            .. "   " .. count(summary.underHit, "under hit cap")
-            .. " · " .. count(summary.underDefense, "tank under def cap")
-            .. " · " .. count(summary.missing, "missing gear/enchants"))
     end
 
     local offset = frame.scroll and FauxScrollFrame_GetOffset and FauxScrollFrame_GetOffset(frame.scroll) or 0
@@ -718,28 +779,56 @@ function TB.CreateArmoryFrame(parent)
         TB.UI.SetTooltip(guild, "Your claimed guild bots and the party bots you control.", "Guild bots")
     end
 
-    local summary = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    summary:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, -26)
-    summary:SetWidth(width - 8); summary:SetJustifyH("LEFT")
-    frame.summary = summary
+    -- Summary band: role counts as icon tiles on the left, readiness
+    -- problems as coloured chips on the right.
+    local band = CreateFrame("Frame", nil, frame)
+    band:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -26)
+    band:SetWidth(width); band:SetHeight(30)
+    TB.ApplySurface(band, "card")
+    frame.band = band
+    frame.roleTiles = {}
+    for i, def in ipairs({ { "tank", "Tanks" }, { "healer", "Healers" }, { "melee", "DPS" } }) do
+        local icon = band:CreateTexture(nil, "ARTWORK")
+        icon:SetWidth(18); icon:SetHeight(18)
+        icon:SetPoint("LEFT", band, "LEFT", 8 + (i - 1) * 72, 0)
+        icon:SetTexture(ROLE_ICONS[def[1]])
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        local value = band:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        value:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+        local label = band:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        label:SetPoint("LEFT", value, "RIGHT", 3, 0)
+        label:SetText(def[2])
+        TB.SetTextColor(label, color("muted"))
+        frame.roleTiles[i] = value
+    end
+    frame.chips = {}
+    for i = 1, 3 do
+        local chip = CreateFrame("Frame", nil, band)
+        chip:SetWidth(80); chip:SetHeight(20)
+        chip:SetPoint("RIGHT", band, "RIGHT", -6 - (3 - i) * 84, 0)
+        chip:SetBackdrop(TB.FLAT_BACKDROP)
+        chip.text = chip:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        chip.text:SetPoint("CENTER", chip, "CENTER", 0, 0)
+        frame.chips[i] = chip
+    end
 
     local columns = {
-        { text = "Name", x = 7, width = 70 },
-        { text = "Spec", x = 83, width = 68 },
-        { text = "Hit", x = 157, width = 50 },
-        { text = "Def", x = 213, width = 30 },
-        { text = "Equipped", x = 249, width = 160 },
+        { text = "Name", x = 7, width = 60 },
+        { text = "Spec", x = 69, width = 58 },
+        { text = "Hit", x = 130, width = 44 },
+        { text = "Def", x = 176, width = 28 },
+        { text = "Equipped", x = STRIP_X, width = 160 },
     }
     for _, column in ipairs(columns) do
         local head = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        head:SetPoint("TOPLEFT", frame, "TOPLEFT", column.x, -46)
+        head:SetPoint("TOPLEFT", frame, "TOPLEFT", column.x, -62)
         head:SetWidth(column.width); head:SetJustifyH("LEFT")
         head:SetText(string.upper(column.text))
         TB.SetTextColor(head, color("faint"))
     end
 
     local scroll = CreateFrame("ScrollFrame", "TortoiseBotsManagerArmoryScroll", frame, "FauxScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -62)
+    scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -78)
     scroll:SetWidth(width - 26)
     scroll:SetHeight(ROW_N * ROW_H)
     scroll:SetScript("OnVerticalScroll", function()

@@ -6113,7 +6113,7 @@ end)();
     assert(TB.armoryFrame:IsVisible() and TB.tabArmory:IsVisible(), "Armory tab opens with the capability")
     local _, rowRel = TB.armoryFrame.rows[1]:GetPoint()
     local _, _, _, _, scrollY = TB.armoryFrame.scroll:GetPoint()
-    assert(rowRel == TB.armoryFrame.scroll and scrollY == -62,
+    assert(rowRel == TB.armoryFrame.scroll and scrollY == -78,
         "Armory rows hang below the column heads, not over the search row")
     -- Drain the tab's refresh request (empty snapshot) before the panel test.
     TB.OnSystemMessage("TBM:ARMORY_BEGIN|0")
