@@ -16,7 +16,7 @@ sources:
 
 # Protocol and Development
 
-- **Addon protocol:** Clicks and state refreshes travel over the silent addon message channel defined in `docs/developers/protocol.md` (compatible with TortoiseBots on Tortoise WoW 1.18.1).[^protocol-doc]
+- **Addon protocol:** Clicks and state refreshes travel over the silent addon message channel defined in `docs/developers/protocol.md` (compatible with TortoiseBots on Tortoise WoW 1.18.1). The `armory` capability adds the `TBM:ARMORY_BEGIN` / `ARMORY` / `ARMORY_EQ` / `ARMORY_END` snapshot behind the Armory tab and the Gear tab readiness extras.[^protocol-doc]
 - **Development and releases:** Test scripts, packaging, and release checklist are documented in `docs/developers/development.md`.[^dev-doc]
 - **Attribution:** Keep the in-addon credit (window header, load message, `/tbm help`) intact in modified builds.
 

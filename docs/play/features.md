@@ -40,6 +40,8 @@ Every feature, where to find it, and what the server needs. "Always" means any T
 | Alt summary: one line per alt-bot playing alone | Roster | Always | [Roster tab](party-roster-guild.md#roster-tab) | |
 | Claimed guild bots, fill raid | Guild | `claimed-roster` | [Guild tab](party-roster-guild.md#guild-tab) | [guilds](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/world/social.md#autonomous-guild-formation) |
 | Guild orders (farm, buy, craft) with live progress | Guild | `guild-orders` | [Guild orders](party-roster-guild.md#guild-orders) | |
+| Armory readiness: hit/defense vs cap, equipped strip, missing gear and enchants | Armory | `armory` | [Armory tab](party-roster-guild.md#armory-tab) | [armory](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/addon.md) |
+| Gear tab readiness dots, Missing line and stats sheet | Bot panel Gear | `armory` | [Gear tab readiness](bot-panel.md#gear-tab-readiness) | |
 | Raid helpers, custom raid tactics | Raid (in a raid) | Always | [Raid tab](party-roster-guild.md#raid-tab) | [raid tactics](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/dungeons-and-raids.md#raid-tactics--boss-mechanics) |
 | Gear, bags, item menu, trade, upkeep, autogear | Bot panel | `inventory` | [Bot panel](bot-panel.md) | [bot panel](https://github.com/Sagiroth/TortoiseBots/blob/main/docs/play/commands/bot-panel.md#bot-panel-commands) |
 | Class choices: paladin aura, hunter aspect and sting, warlock curse and demon, rogue poisons | Bot panel Behaviour view (`choice` capability) | `choice` | [Class choices](bot-panel.md#class-choices) | `.bot choice` |

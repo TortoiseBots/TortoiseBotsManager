@@ -52,7 +52,7 @@ end
 -- ── world: a five-man party of your bots, a roster, a guild ─────────────
 feed({
     "TBM:VERSION|1.12.0",
-    "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service",
+    "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,armory",
 })
 Mock.world.party = {
     { name = "Thalgrim", class = "Warrior", level = 60 },
@@ -99,6 +99,32 @@ feed({
     "TBM:ORDER|Goldie|farm|2318|Light Leather|4|10|working|-|Ashenvale",
     "TBM:ORDER|Ironhide|craft|3860|Mithril Casing|1|2|waiting|-|Ironforge",
     "TBM:ORDER_END",
+})
+feed({
+    "TBM:ARMORY_BEGIN|6",
+    "TBM:ARMORY|Goldie|1|60|1|1|tank|Protection|72|6.0|5.0|2.0|441|112+15+10+10+10|9|440|"
+        .. "ap=1284,crit=18.2,armor=9870,sta=620,sp=0,heal=0,scrit=0,mp5=0,int=40",
+    "TBM:ARMORY|Ironhide|2|60|1|1|tank|Protection|68|4.0|4.0|2.0|418|64+0+0+0+0|9|440|"
+        .. "ap=1100,crit=12.0,armor=9200,sta=580,sp=0,heal=0,scrit=0,mp5=0,int=60",
+    "TBM:ARMORY|Stitchwork|9|60|1|1|caster|Affliction|74|3.0|3.0|16.0|300|0+0+0+35+0|16|0|"
+        .. "ap=100,crit=5.0,armor=1200,sta=420,sp=386,heal=0,scrit=6.8,mp5=42,int=310",
+    "TBM:ARMORY|Seraphine|5|60|1|1|healer|Holy|78|0|0|0|300|0+0+0+30+0|0|0|"
+        .. "ap=0,crit=4.0,armor=900,sta=380,sp=0,heal=412,scrit=6.8,mp5=42,int=320",
+    "TBM:ARMORY|Fenwick|3|38|0|0|ranged|Marksmanship|0|0|0|0|0|0+0+0+0+0|9|0|-",
+    "TBM:ARMORY|Mistral|7|52|0|0|healer|Restoration|0|0|0|0|0|0+0+0+0+0|0|0|-",
+    "TBM:ARMORY_EQ|Goldie|0:12640:0:1,1:11815:0:0,2:12640:0:0,14:13340:0:0,4:2586:0:0,"
+        .. "8:2586:0:0,9:2586:0:0,5:2586:0:1,6:2586:0:0,7:2586:0:0,10:11815:0:2,"
+        .. "11:11815:0:0,12:11815:0:0,13:11815:0:0,15:19019:0:0,16:1201:0:0,17:0:0:0",
+    "TBM:ARMORY_EQ|Ironhide|0:12640:0:0,1:11815:0:0,2:12640:0:1,14:13340:0:0,4:2586:0:0,"
+        .. "8:2586:0:0,9:2586:0:0,5:2586:0:1,6:2586:0:0,7:2586:0:0,10:11815:0:0,"
+        .. "11:11815:0:0,12:11815:0:0,13:11815:0:0,15:19019:0:0,16:1201:0:0,17:0:0:2",
+    "TBM:ARMORY_EQ|Stitchwork|0:2586:0:1,1:11815:0:0,2:2586:0:0,14:13340:0:0,4:2586:0:0,"
+        .. "8:2586:0:0,9:2586:0:0,5:2586:0:1,6:2586:0:0,7:2586:0:0,10:11815:0:0,"
+        .. "11:11815:0:0,12:11815:0:0,13:11815:0:0,15:19019:0:0,16:1201:0:0,17:0:0:0",
+    "TBM:ARMORY_EQ|Seraphine|0:12640:0:1,1:11815:0:0,2:12640:0:0,14:13340:0:0,4:2586:0:0,"
+        .. "8:2586:0:0,9:2586:0:0,5:2586:0:1,6:2586:0:0,7:2586:0:0,10:11815:0:0,"
+        .. "11:11815:0:0,12:11815:0:0,13:11815:0:0,15:19019:0:0,16:1201:0:0,17:0:0:2",
+    "TBM:ARMORY_END|6",
 })
 for _, l in ipairs({
     "Thalgrim: Following you in shield formation.",
@@ -216,10 +242,10 @@ end
 
 scene("fight", function() tab("actions", nil); dump("fight", { main }, "Fight tab, no target") end)
 scene("fight-engage", function()
-    feed({ "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,engage" })
+    feed({ "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,engage,armory" })
     tab("actions", nil)
     dump("fight-engage", { main }, "Fight tab on a server with the Engage hold")
-    feed({ "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service" })
+    feed({ "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,armory" })
 end)
 scene("fight-target", function()
     tab("actions", { name = "Defias Pillager", player = false, class = "Rogue" })
@@ -247,6 +273,12 @@ scene("guild", function()
     if TB.ToggleClaimedSelection then TB.ToggleClaimedSelection("Goldie", true) end
     if TB.RefreshGuildView then TB.RefreshGuildView() end
     dump("guild", { main }, "Guild tab with orders")
+end)
+scene("armory", function()
+    tab("armory", nil)
+    TB.SetArmorySelection("Ironhide")
+    TB.RefreshArmoryView()
+    dump("armory", { main }, "Armory tab: hit and defense vs cap, equipped strip")
 end)
 scene("log", function() tab("log", nil); dump("log", { main }, "Log tab") end)
 scene("loot", function()
@@ -323,6 +355,15 @@ for _, view in ipairs({ "gear", "bags", "behavior", "spells", "profs" }) do
         dump("panel-" .. view, { main, TB.botPanel }, "Bot panel: " .. view)
     end)
 end
+scene("panel-gear-stats", function()
+    tab("party", nil)
+    TB.OpenBotPanel("Seraphine", "gear")
+    tick(1)
+    TB.ToggleGearStats()
+    TB.RefreshBotPanel()
+    dump("panel-gear-stats", { main, TB.botPanel }, "Bot panel: Gear tab with the stats sheet")
+    TB.ToggleGearStats()
+end)
 scene("panel-totems", function()
     tab("party", nil)
     feed({
@@ -337,7 +378,7 @@ end)
 scene("panel-choices", function()
     tab("party", nil)
     feed({
-        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,choice",
+        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,choice,armory",
         "TBM:BOTSTATE|Kaelthor|move=follow,loot=on,hold=on",
         "TBM:CHOICE|Kaelthor|aura=devotion aura,known=devotion aura+retribution aura+shadow resistance",
     })
@@ -365,7 +406,7 @@ local function classControlsParty()
     table.insert(Mock.world.party, { name = "Nightveil", class = "Priest", level = 60 })
     table.insert(Mock.world.party, { name = "Swiftarrow", class = "Hunter", level = 60 })
     feed({
-        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,choice,focus-mark",
+        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,choice,focus-mark,armory",
         "TBM:CC_ASSIGN_BEGIN|1",
         "TBM:CC_ASSIGN|Vexmora|moon",
         "TBM:CC_ASSIGN_END",
@@ -407,7 +448,7 @@ end)
 scene("blessings", function()
     table.insert(Mock.world.party, { name = "Kaelthor", class = "Paladin", level = 60 })
     feed({
-        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,blessing,choice,blessing-player",
+        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,blessing,choice,blessing-player,armory",
         "TBM:BOTSTATE|Kaelthor|move=follow,loot=on",
         "TBM:CHOICE|Kaelthor|aura=devotion aura,known=devotion aura+retribution aura+concentration aura+shadow resistance aura",
         "TBM:BLESSING|Kaelthor|warrior=kings,paladin=kings,hunter=might,rogue=might,priest=wisdom,shaman=wisdom,"
@@ -451,7 +492,7 @@ scene("blessings-raid", function()
         return realClass(u)
     end
     feed({
-        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,blessing,choice,blessing-player",
+        "TBM:CAPS|pull-seconds,flee,inventory,behavior,downtime,claimed-roster,guild-orders,professions,dungeon-run,loot-log,service,blessing,choice,blessing-player,armory",
         "TBM:BOTSTATE|Kaelthor|move=follow,loot=on",
         "TBM:BOTSTATE|Sunblade|move=follow,loot=on",
         "TBM:BOTSTATE|Lightward|move=follow,loot=on",

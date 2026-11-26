@@ -331,9 +331,15 @@ end
 --   TBM:PROF_END|<bot>|<recipeCount>[|<missingCount>]
 -- The END commits only when both counts match the lines received; an old
 -- 3-field END (no missing count) commits with zero missing lines.
+-- Armory snapshot (reply to ".bot armory" / ".bot armory <bot>"):
+--   TBM:ARMORY_BEGIN|<count>
+--   TBM:ARMORY|<name>|<classId>|<level>|<online>|<inGroup>|<role>|<spec>|...
+--   TBM:ARMORY_EQ|<name>|<slot>:<itemId>:<enchantId>:<miss>,...
+--   TBM:ARMORY_END|<count>
 local botStateReceiving = nil
 local inventoryReceiving = nil
 local professionsReceiving = nil
+local armoryReceiving = nil
 
 local function parseStateFields(text)
     local state = {}
@@ -398,6 +404,51 @@ function TB.ParseBotPanelMessage(msg)
     end
     if string.sub(msg, 1, 13) == "TBM:BLESSING|" then
         if TB.ConsumeBlessingLine then TB.ConsumeBlessingLine(msg) end
+        return true
+    end
+    if string.sub(msg, 1, 17) == "TBM:ARMORY_BEGIN|" then
+        local fields = splitProtocol(string.sub(msg, 18))
+        local count = fields[1] and tonumber(fields[1])
+        if count then
+            armoryReceiving = { expected = count, rows = {}, eq = {} }
+        else
+            armoryReceiving = nil
+        end
+        return true
+    end
+    if string.sub(msg, 1, 11) == "TBM:ARMORY|" then
+        local fields = splitProtocol(string.sub(msg, 12))
+        if armoryReceiving and table.getn(fields) >= 16 and TB.ParseArmoryRow then
+            local row = TB.ParseArmoryRow(fields)
+            if row then table.insert(armoryReceiving.rows, row) end
+        end
+        return true
+    end
+    if string.sub(msg, 1, 14) == "TBM:ARMORY_EQ|" then
+        local fields = splitProtocol(string.sub(msg, 15))
+        local name = fields[1] and TB.NormalizeName(fields[1]) or nil
+        if armoryReceiving and name and name ~= "" and TB.ParseArmoryEquipment then
+            armoryReceiving.eq[name] = TB.ParseArmoryEquipment(fields[2])
+        end
+        return true
+    end
+    if string.sub(msg, 1, 15) == "TBM:ARMORY_END|" then
+        local fields = splitProtocol(string.sub(msg, 16))
+        local batch = armoryReceiving
+        armoryReceiving = nil
+        local count = fields[1] and tonumber(fields[1])
+        if batch and count and count == batch.expected
+            and table.getn(batch.rows) == batch.expected
+            and (not TB.HasArmoryCapability or TB.HasArmoryCapability())
+            and TB.SetArmory then
+            for _, row in ipairs(batch.rows) do
+                row.eq = batch.eq[row.name] or {}
+                row.eqKnown = batch.eq[row.name] ~= nil
+            end
+            local full = true
+            if TB.ArmoryRequestMode then full = TB.ArmoryRequestMode() end
+            TB.SetArmory(batch.rows, full)
+        end
         return true
     end
     if string.sub(msg, 1, 14) == "TBM:INV_BEGIN|" then
@@ -639,7 +690,7 @@ end
 -- Bot panel requests (inventory, item orders, behaviour toggles) are answered
 -- by structured lines of their own; they are not roster lifecycle operations.
 function TB.IsPanelVerb(verb)
-    return verb == "inv" or verb == "item" or verb == "behavior"
+    return verb == "inv" or verb == "item" or verb == "behavior" or verb == "armory"
 end
 
 local function commandTargetName(cmd)
@@ -850,6 +901,7 @@ function TB.OnSystemMessage(msg)
             if TB.NoteBlessingCaps then TB.NoteBlessingCaps() end
             if TB.NoteChoiceCaps then TB.NoteChoiceCaps() end
             if TB.NoteChoiceBlockCaps then TB.NoteChoiceBlockCaps() end
+            if TB.NoteArmoryCaps then TB.NoteArmoryCaps() end
             -- CAPS closes the roster reply, after PROTO and VERSION: a module
             -- that sent no PROTO by now is older than the protocol check.
             if TB.CheckCompat then TB.CheckCompat() end

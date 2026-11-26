@@ -24,6 +24,7 @@ Plain Vanilla 1.12 Lua (Lua 5.0 API in the client): no libraries, no Ace. Copy t
 | `Comms.lua` | Transport choice, inbound routing, `TBM:` line and chat reply parsing |
 | `Roster.lua` | Roster, claimed-bot and CC snapshots; lifecycle state |
 | `UI.lua` | Main window and all tabs |
+| `Armory.lua` | Armory tab model and view; the Gear tab readiness dots, Missing line and stats sheet model |
 | `BotPanel.lua` | Bot panel: live bot state, gear, bags, behaviour, spells |
 | `BotBlessing.lua` | Paladin blessing grid window, opened from the Party tab |
 | `BotTotem.lua` | Shaman totem picker, drop mode and presets in the bot panel's Behaviour view |

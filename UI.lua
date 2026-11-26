@@ -1723,6 +1723,7 @@ function TB.InitUI()
     local tabCamp = makeTab("Camp", 80)
     local tabParty = makeTab("Party", 160)
     local tabGuild = makeTab("Guild", 240)
+    local tabArmory = makeTab("Armory", 300)
     local tabRoster = makeTab("Roster", 320)
     local tabRaid = makeTab("Raid", 400)
     local tabDungeon = makeTab("Dungeon", 480)
@@ -2563,6 +2564,7 @@ end
     end
 
     local guildFrame = CreateGuildView(content)
+    local armoryFrame = TB.CreateArmoryFrame and TB.CreateArmoryFrame(content) or nil
 
     local function CreateLogView(parent)
         local logFrame = CreateFrame("Frame", nil, parent)
@@ -3080,6 +3082,7 @@ end
         { name = "camp",    tab = tabCamp,    frame = campFrame },
         { name = "party",   tab = tabParty,   frame = partyFrame },
         { name = "guild",   tab = tabGuild,   frame = guildFrame },
+        { name = "armory",  tab = tabArmory,  frame = armoryFrame },
         { name = "roster",  tab = tabRoster,  frame = rosterFrame },
         { name = "raid",    tab = tabRaid,    frame = raidFrame },
         { name = "dungeon", tab = tabDungeon, frame = dungeonFrame },
@@ -3095,10 +3098,11 @@ end
         if name == "raid" then return inRaid() end
         if name == "dungeon" then return serverHasCap("dungeon-run") end
         if name == "loot" then return serverHasCap("loot-log") end
+        if name == "armory" then return armoryFrame ~= nil and serverHasCap("armory") end
         return true
     end
 
-    -- Responsive tab bar layout: adjusts width and stride to fit 6 to 9 tabs.
+    -- Responsive tab bar layout: adjusts width and stride to fit 6 to 10 tabs.
     local function layoutTabs()
         local visibleCount = 0
         for _, t in ipairs(tabs) do
@@ -3160,6 +3164,9 @@ end
             if TB.RequestOrderList then TB.RequestOrderList() end
         elseif name == "party" then
             if TB.RefreshPartyView then TB.RefreshPartyView() end
+        elseif name == "armory" then
+            if TB.RefreshArmoryView then TB.RefreshArmoryView() end
+            if TB.RequestArmory then TB.RequestArmory() end
         elseif name == "log" then
             if TB.RefreshLogView then TB.RefreshLogView() end
         elseif name == "loot" then
@@ -3198,6 +3205,7 @@ end
     TB.tabDungeon, TB.dungeonFrame = tabDungeon, dungeonFrame
     TB.tabLoot, TB.lootFrame = tabLoot, lootFrame
     TB.tabGuild, TB.guildFrame = tabGuild, guildFrame
+    TB.tabArmory, TB.armoryFrame = tabArmory, armoryFrame
     TB.tabRaid, TB.raidFrame = tabRaid, raidFrame
     TB.tabCamp = tabCamp
     TB.actionsFrame, TB.partyFrame, TB.rosterFrame, TB.logFrame = actionsFrame, partyFrame, rosterFrame, logFrame

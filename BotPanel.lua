@@ -847,6 +847,7 @@ end
 local panel
 local currentBot
 local currentView = "gear"
+local gearStats = false -- Gear tab: swap the model for the stat sheet
 local bagPage = 1
 local profPage = 1
 local profSearch = ""
@@ -1145,6 +1146,11 @@ local function createItemButton(parent)
     b.badge = b:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     b.badge:SetPoint("TOPLEFT", b, "TOPLEFT", 2, -1)
     b.badge:SetText("|cff40ff40+|r")
+    b.missDot = b:CreateTexture(nil, "OVERLAY")
+    b.missDot:SetWidth(8); b.missDot:SetHeight(8)
+    b.missDot:SetPoint("TOPRIGHT", b, "TOPRIGHT", 3, 3)
+    b.missDot:SetTexture(1.00, 0.34, 0.28, 1)
+    b.missDot:Hide()
     local hl = b:CreateTexture(nil, "HIGHLIGHT")
     hl:SetAllPoints(b)
     hl:SetTexture(1, 1, 1, 0.15)
@@ -1171,6 +1177,9 @@ local function createItemButton(parent)
             GameTooltip:SetText(this.slotLabel or "Empty")
             GameTooltip:AddLine("Nothing equipped", 0.62, 0.60, 0.56)
         end
+        if this.missReason then
+            GameTooltip:AddLine(this.missReason, 1.00, 0.34, 0.28)
+        end
         GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1192,6 +1201,8 @@ end
 
 local function paintItemButton(b, entry, emptyTexture)
     b.entry = entry
+    if b.missDot then b.missDot:Hide() end
+    b.missReason = nil
     if entry and entry.id then
         local _, _, quality, texture = itemInfo(entry.id)
         if not texture then requestItem(entry.id) end
@@ -1517,6 +1528,39 @@ local function createPanel()
     durability:SetPoint("TOP", panel, "TOP", 0, -342)
     durability:SetWidth(PW - 110)
     panel.durabilityText = durability
+
+    local missing = gear:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    missing:SetPoint("TOP", panel, "TOP", 0, -357)
+    missing:SetWidth(PW - 60)
+    panel.missingText = missing
+
+    -- Gear readiness (server capability `armory`): a dot on every slot with
+    -- something missing, the Missing line above, and this button swapping
+    -- the model for hit/defense, the main stats and the five resists.
+    local statsButton = TB.StyleButton(CreateFrame("Button", nil, gear, "UIPanelButtonTemplate"), "mode")
+    statsButton:SetWidth(44); statsButton:SetHeight(18)
+    statsButton:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -56, -78)
+    statsButton:SetText("Stats")
+    statsButton:SetScript("OnClick", function() TB.ToggleGearStats() end)
+    panel.statsButton = statsButton
+
+    local sheet = CreateFrame("Frame", nil, gear)
+    sheet:SetPoint("TOPLEFT", panel, "TOPLEFT", 52, -74)
+    sheet:SetWidth(PW - 104); sheet:SetHeight(262)
+    TB.ApplySurface(sheet, "card")
+    sheet:Hide()
+    sheet.lines = {}
+    for i = 1, 16 do
+        local label = sheet:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        label:SetPoint("TOPLEFT", sheet, "TOPLEFT", 8, -5 - (i - 1) * 15)
+        label:SetWidth(118); label:SetJustifyH("LEFT")
+        TB.SetTextColor(label, color("muted"))
+        local value = sheet:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        value:SetPoint("TOPRIGHT", sheet, "TOPRIGHT", -8, -5 - (i - 1) * 15)
+        value:SetWidth(92); value:SetJustifyH("RIGHT")
+        table.insert(sheet.lines, { label = label, value = value })
+    end
+    panel.statsSheet = sheet
     panel.gearButtons = {}
     local function placeColumn(list, x)
         for i, def in ipairs(list) do
@@ -1840,9 +1884,10 @@ local function createPanel()
     refresh:SetWidth(56); refresh:SetHeight(22)
     refresh:SetPoint("LEFT", trade, "RIGHT", 3, 0)
     refresh:SetText("Refresh")
-    setTooltip(refresh, "Refresh", { "Reload gear, bags, behaviour, totems, conjured goods and professions from the server." })
+    setTooltip(refresh, "Refresh", { "Reload gear, readiness, bags, behaviour, totems, conjured goods and professions from the server." })
     refresh:SetScript("OnClick", function()
         if currentBot then TB.RequestInventory(currentBot) end
+        if currentBot and TB.RequestArmory then TB.RequestArmory(currentBot) end
         if currentBot then TB.RequestProfessions(currentBot) end
         if currentBot and TB.ServiceWanted(currentBot) then TB.RequestService(currentBot) end
         if currentBot and TB.TotemWanted(currentBot) then TB.RequestTotems(currentBot) end
@@ -1981,8 +2026,148 @@ local function renderService()
     end
 end
 
+function TB.ToggleGearStats()
+    gearStats = not gearStats
+    if TB.RefreshBotPanel then TB.RefreshBotPanel() end
+end
+
+local function armorySlotReason(slot, miss)
+    if miss == 2 then return "Empty slot" end
+    if slot == 5 then return "No belt enchant" end
+    return "No enchant"
+end
+
+local function armoryStat(row, key)
+    local value = row and row.stats and row.stats[key]
+    if value == nil then return nil end
+    return value
+end
+
+local function statWhole(value)
+    if value == nil then return "—" end
+    return tostring(math.floor(value + 0.5))
+end
+
+local function statTenths(value)
+    if value == nil then return "—" end
+    return string.format("%.1f", value)
+end
+
+-- The sheet over the model: goals first, then the block that fits the role,
+-- then the five schools. Lines are fixed FontStrings; unused ones go blank.
+local function paintStatsSheet(row)
+    local sheet = panel.statsSheet
+    if not sheet then return end
+    local lines = sheet.lines
+    local index = 0
+    local function clearLine(line)
+        line.label:SetText("")
+        line.value:SetText("")
+    end
+    local function header(text)
+        index = index + 1
+        local line = lines[index]
+        if not line then return end
+        line.label:SetText(string.upper(text))
+        TB.SetTextColor(line.label, color("title"))
+        line.value:SetText("")
+    end
+    local function add(label, value, hex)
+        index = index + 1
+        local line = lines[index]
+        if not line then return end
+        line.label:SetText(label)
+        TB.SetTextColor(line.label, color("muted"))
+        if hex then value = hex .. value .. "|r" end
+        line.value:SetText(value)
+    end
+
+    if not row then
+        header("Goals")
+        add("Armory data", "not loaded yet")
+    elseif not row.online then
+        header("Goals")
+        add("Status", "offline")
+    else
+        local role = row.role
+        local caster = role == "caster" or role == "healer"
+        header("Goals · " .. TB.ArmoryRoleLabel(role))
+        if role == "healer" then
+            add("Hit", "no goal for healers")
+        else
+            local hit, cap = TB.ArmoryHit(row)
+            local pass = TB.ArmoryHitPass(row)
+            local text = string.format("%.1f", hit) .. "% / " .. tostring(cap) .. "%"
+            add(caster and "Spell hit" or "Hit", text, pass and "|cff4de673" or "|cffff5747")
+        end
+        if role == "tank" then
+            local pass = TB.ArmoryDefensePass(row)
+            add("Defense", tostring(row.defense or 0) .. " / " .. tostring(row.defCap or 0),
+                pass and "|cff4de673" or "|cffff5747")
+        end
+        header(caster and "Spell" or "Melee")
+        if row.hasStats then
+            if caster then
+                if role == "healer" then
+                    add("Healing done", "+" .. statWhole(armoryStat(row, "heal")))
+                else
+                    add("Spell power", "+" .. statWhole(armoryStat(row, "sp")))
+                end
+                add("Spell crit", statTenths(armoryStat(row, "scrit")) .. "%")
+                add("Mana regen", statWhole(armoryStat(row, "mp5")) .. " MP5")
+                add("Intellect", statWhole(armoryStat(row, "int")))
+            else
+                add("Attack power", statWhole(armoryStat(row, "ap")))
+                add("Crit", statTenths(armoryStat(row, "crit")) .. "%")
+                add("Armor", statWhole(armoryStat(row, "armor")))
+                add("Stamina", statWhole(armoryStat(row, "sta")))
+            end
+        else
+            add("Stats", "none sent")
+        end
+        header("Resistances")
+        local names = { "Fire", "Nature", "Frost", "Shadow", "Arcane" }
+        for i, name in ipairs(names) do
+            add(name, tostring(row.resists and row.resists[i] or 0))
+        end
+    end
+    for i = index + 1, table.getn(lines) do clearLine(lines[i]) end
+end
+
+local function renderMissing(row)
+    local fs = panel.missingText
+    if not fs then return end
+    if not (TB.HasArmoryCapability and TB.HasArmoryCapability()) then
+        fs:SetText("")
+        fs:Hide()
+        return
+    end
+    fs:Show()
+    if not row then
+        fs:SetText("Missing: checking…")
+        TB.SetTextColor(fs, color("muted"))
+    elseif not row.online then
+        fs:SetText("Missing: offline")
+        TB.SetTextColor(fs, color("muted"))
+    elseif row.eqKnown == false then
+        fs:SetText("Missing: not reported")
+        TB.SetTextColor(fs, color("muted"))
+    else
+        local missing = TB.ArmoryMissing(row)
+        if table.getn(missing) == 0 then
+            fs:SetText("Nothing missing")
+            TB.SetTextColor(fs, color("green"))
+        else
+            fs:SetText(TB.ArmoryMissingText(row))
+            TB.SetTextColor(fs, color("red"))
+        end
+    end
+end
+
 local function renderGear(inv)
     local equipped = inv and inv.equipped or {}
+    local armoryRow = TB.GetArmoryRow and TB.GetArmoryRow(currentBot) or nil
+    local hasArmory = TB.HasArmoryCapability and TB.HasArmoryCapability() or false
     local lowest, upgrades = nil, 0
     for slot, b in pairs(panel.gearButtons) do
         local item = equipped[slot]
@@ -1991,6 +2176,13 @@ local function renderGear(inv)
             durability = item.durability, maxDurability = item.maxDurability,
         } or nil
         paintItemButton(b, entry, b.emptyTexture)
+        if hasArmory and armoryRow and armoryRow.online then
+            local eq = armoryRow.eq and armoryRow.eq[slot]
+            if eq and (eq.miss or 0) > 0 then
+                if b.missDot then b.missDot:Show() end
+                b.missReason = armorySlotReason(slot, eq.miss)
+            end
+        end
         if item and item.maxDurability and item.maxDurability > 0 then
             local pct = item.durability / item.maxDurability
             if not lowest or pct < lowest then lowest = pct end
@@ -2009,15 +2201,37 @@ local function renderGear(inv)
         text = text .. (text ~= "" and "\n" or "") .. "|cff40ff40" .. upgrades .. " upgrade(s) in bags|r"
     end
     panel.durabilityText:SetText(text)
-    if panel.model then
-        local unit = botUnit(currentBot)
-        if unit and panel.model.SetUnit then
-            panel.model:SetUnit(unit)
-            panel.model:Show()
+    if not hasArmory then gearStats = false end
+    if panel.statsButton then
+        if hasArmory then
+            panel.statsButton:Show()
+            panel.statsButton:SetText(gearStats and "Model" or "Stats")
         else
-            panel.model:Hide()
+            panel.statsButton:Hide()
         end
     end
+    if panel.model then
+        if hasArmory and gearStats then
+            panel.model:Hide()
+        else
+            local unit = botUnit(currentBot)
+            if unit and panel.model.SetUnit then
+                panel.model:SetUnit(unit)
+                panel.model:Show()
+            else
+                panel.model:Hide()
+            end
+        end
+    end
+    if panel.statsSheet then
+        if hasArmory and gearStats then
+            panel.statsSheet:Show()
+            paintStatsSheet(armoryRow)
+        else
+            panel.statsSheet:Hide()
+        end
+    end
+    renderMissing(armoryRow)
 end
 
 local function renderBags(inv)
@@ -2415,7 +2629,7 @@ function TB.OpenBotPanel(name, view)
     if TB.CloseOrderWindow then TB.CloseOrderWindow() end
     if TB.CloseBlessings then TB.CloseBlessings() end
     if TB.SetMode then TB.SetMode("full") end
-    if currentBot ~= name then bagPage = 1; spellPage = 1; profPage = 1; profSearch = "" end
+    if currentBot ~= name then bagPage = 1; spellPage = 1; profPage = 1; profSearch = ""; gearStats = false end
     currentBot = name
     if view then currentView = view end
     hideMenu()
@@ -2436,6 +2650,7 @@ function TB.OpenBotPanel(name, view)
     panel:Show()
     TB.RefreshBotPanel()
     TB.RequestInventory(name)
+    if TB.RequestArmory then TB.RequestArmory(name) end
     -- Ask once for a mage or warlock with no cached reply; Refresh asks
     -- again. Never on a timer, never on hover. The ask travels with the
     -- inventory request, so one open is one extra line at most.
